@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import LineChart from '@/components/LineChart';
 import RangeChips, { type RangeKey } from '@/components/RangeChips';
 import { formatCurrency } from '@/lib/format';
@@ -10,11 +10,12 @@ import { rangeToDates } from '@/lib/date';
 import { useData } from '@/lib/useData';
 
 export default function AccountDetailPageClient() {
-  const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const accountId = searchParams.get('id');
   const data = useData();
   const [range, setRange] = useState<RangeKey>('6m');
 
-  const account = data?.accounts.find((item) => item.id === params.id);
+  const account = data?.accounts.find((item) => item.id === accountId);
 
   const view = useMemo(() => {
     if (!data || !account) return null;
@@ -47,7 +48,7 @@ export default function AccountDetailPageClient() {
     return { rangeDates, series, value, explain };
   }, [data, account, range]);
 
-  if (!data || !account || !view) {
+  if (!data || !accountId || !account || !view) {
     return <div className="px-4 py-6 text-muted">Account not found.</div>;
   }
 
@@ -98,7 +99,11 @@ export default function AccountDetailPageClient() {
             <span>Money moved</span>
             <span>
               {view.explain.moneyMovedAvailable
-                ? formatCurrency(view.explain.accountRows[0]?.moneyMoved ?? 0, data.settings.baseCurrency, data.settings.locale)
+                ? formatCurrency(
+                    view.explain.accountRows[0]?.moneyMoved ?? 0,
+                    data.settings.baseCurrency,
+                    data.settings.locale
+                  )
                 : 'Unknown'}
             </span>
           </div>
@@ -106,7 +111,11 @@ export default function AccountDetailPageClient() {
             <span>Market change</span>
             <span>
               {view.explain.moneyMovedAvailable
-                ? formatCurrency(view.explain.accountRows[0]?.marketChange ?? 0, data.settings.baseCurrency, data.settings.locale)
+                ? formatCurrency(
+                    view.explain.accountRows[0]?.marketChange ?? 0,
+                    data.settings.baseCurrency,
+                    data.settings.locale
+                  )
                 : 'Unknown'}
             </span>
           </div>
