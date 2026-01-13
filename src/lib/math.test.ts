@@ -1,5 +1,4 @@
-import { describe, expect, it } from 'vitest';
-import { accountValueAtDate, explainDelta, fxConversion, netWorthAtDate } from './math';
+import { accountValueAtDate, explainDelta, findFxRate, fxConversion, netWorthAtDate } from './math';
 import type { Account, Cashflow, FxRate, Snapshot } from './types';
 
 const account: Account = {
@@ -71,6 +70,19 @@ describe('fxConversion', () => {
     expect(result.amountMinorUnits).toBe(7500);
     expect(result.missingFx).toBe(false);
   });
+
+  it('flags missing fx when rate unavailable', () => {
+    const result = fxConversion(10000, 'USD', 'EUR', fxRates, '2024-02-15', true);
+    expect(result.amountMinorUnits).toBe(10000);
+    expect(result.missingFx).toBe(true);
+  });
+});
+
+describe('findFxRate', () => {
+  it('selects the latest rate on or before the date', () => {
+    const result = findFxRate('USD', 'GBP', fxRates, '2024-01-15');
+    expect(result?.rate).toBe(0.8);
+  });
 });
 
 describe('accountValueAtDate', () => {
@@ -78,6 +90,12 @@ describe('accountValueAtDate', () => {
     const result = accountValueAtDate(account, snapshots, fxRates, '2024-01-15', 'GBP', false);
     expect(result.valueMinorUnits).toBe(8000);
     expect(result.hasData).toBe(true);
+  });
+
+  it('returns no data when snapshot missing', () => {
+    const result = accountValueAtDate(account, snapshots, fxRates, '2023-12-01', 'GBP', false);
+    expect(result.hasData).toBe(false);
+    expect(result.valueMinorUnits).toBe(0);
   });
 });
 
