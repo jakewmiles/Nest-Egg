@@ -30,7 +30,7 @@ export default function AccountCard({
   isStale: boolean;
 }) {
   return (
-    <Link href={`/accounts/${account.id}`} className="block rounded-2xl bg-panel p-4">
+    <Link href={`/accounts?id=${account.id}`} className="block rounded-2xl bg-panel p-4">
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm text-muted">
