@@ -5,6 +5,10 @@ const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
 async function deriveKey(passphrase: string, salt: Uint8Array) {
+  const saltBuffer = salt.buffer.slice(
+    salt.byteOffset,
+    salt.byteOffset + salt.byteLength
+  ) as ArrayBuffer;
   const baseKey = await crypto.subtle.importKey(
     'raw',
     textEncoder.encode(passphrase),
@@ -15,7 +19,7 @@ async function deriveKey(passphrase: string, salt: Uint8Array) {
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt,
+      salt: saltBuffer,
       iterations: 310000,
       hash: 'SHA-256'
     },
@@ -92,22 +96,26 @@ export async function importDatabase(raw: string, passphrase?: string) {
   }
 
   const data = JSON.parse(payload);
-  await db.transaction('rw', db.settings, db.accounts, db.snapshots, db.cashflows, db.fxRates, db.pricePoints, async () => {
-    await Promise.all([
-      db.settings.clear(),
-      db.accounts.clear(),
-      db.snapshots.clear(),
-      db.cashflows.clear(),
-      db.fxRates.clear(),
-      db.pricePoints.clear()
-    ]);
-    await db.settings.put(data.settings ?? defaultSettings);
-    await db.accounts.bulkPut(data.accounts ?? []);
-    await db.snapshots.bulkPut(data.snapshots ?? []);
-    await db.cashflows.bulkPut(data.cashflows ?? []);
-    await db.fxRates.bulkPut(data.fxRates ?? []);
-    await db.pricePoints.bulkPut(data.pricePoints ?? []);
-  });
+  await db.transaction(
+    'rw',
+    [db.settings, db.accounts, db.snapshots, db.cashflows, db.fxRates, db.pricePoints],
+    async () => {
+      await Promise.all([
+        db.settings.clear(),
+        db.accounts.clear(),
+        db.snapshots.clear(),
+        db.cashflows.clear(),
+        db.fxRates.clear(),
+        db.pricePoints.clear()
+      ]);
+      await db.settings.put(data.settings ?? defaultSettings);
+      await db.accounts.bulkPut(data.accounts ?? []);
+      await db.snapshots.bulkPut(data.snapshots ?? []);
+      await db.cashflows.bulkPut(data.cashflows ?? []);
+      await db.fxRates.bulkPut(data.fxRates ?? []);
+      await db.pricePoints.bulkPut(data.pricePoints ?? []);
+    }
+  );
 
   return data as { settings: Settings };
 }
